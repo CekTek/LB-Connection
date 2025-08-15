@@ -43,7 +43,7 @@ export type LBRemoteFunction = {
 	_TimeOut: number,
 	_Sent: nil|RemoteEvent,
 	_Receive: nil|RemoteEvent,
-	Invoke: (Player, any) -> (boolean, any?),
+	Invoke: (any) -> (boolean, any?),
 	InvokeCallBack: ((any) -> any) -> (((any) -> any)),
 	GetInvokeCallBack: () -> ((any) -> any),
 	Set: () -> (),
@@ -337,18 +337,23 @@ local function RemoteGetCallBack(self: any): CallBack
 	return _GetCallBack(self._Name, RemoteEventsCallBackList);
 end
 
-local function RemoteFunctionInvoke(self: any, plr: Player, ...: any): (boolean, any?)
+local function RemoteFunctionInvoke(self: any, ...: any): (boolean, any?)
 	if not _RateLimit(self) then return false end;
 	local Thread: thread = coroutine.running();
 	local ID: number|string = GenerateNumbers();
 	local Resume: boolean = false;
 
+	local plr = ...
+	if not IsServer then
+		plr = Plr.LocalPlayer
+	end
+	
 	RemoteFunctionsCallBackList[ID] = function(PlayerWhoFired: Player, CallbackState: boolean, ...: any)
 		if (PlayerWhoFired ~= plr) then return end;
 		Resume = true;
 		RemoteFunctionsCallBackList[ID] = nil;
 		if (CallbackState) then
-			task.spawn(Thread, true, ...);
+			task.spawn(Thread, ...);
 		else
 			task.spawn(Thread, false);
 		end
@@ -564,3 +569,4 @@ else
 end
 
 return LBConnection;
+
