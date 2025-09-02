@@ -1,4 +1,4 @@
---!strict
+Tt--!strict
 -- // FileName: LBConnection.lua
 -- // Written by: LingBlack87661
 -- // Description: Connections between client and server.
@@ -337,8 +337,18 @@ local function RemoteGetCallBack(self: any): CallBack
 	return _GetCallBack(self._Name, RemoteEventsCallBackList);
 end
 
-local function RemoteFunctionInvoke(self: any, plr: Player, ...: any): (boolean, any?)
+local function RemoteFunctionInvoke(self: any, ...: any): (boolean, any?)
 	if not _RateLimit(self) then return false end;
+	
+	local Data = {...}
+	
+	local plr
+	if not IsServer then
+		plr = Plr.LocalPlayer
+	else
+		plr = table.remove(Data,1)
+	end
+
 	local Thread: thread = coroutine.running();
 	local ID: number|string = GenerateNumbers();
 	local Resume: boolean = false;
@@ -348,9 +358,9 @@ local function RemoteFunctionInvoke(self: any, plr: Player, ...: any): (boolean,
 		Resume = true;
 		RemoteFunctionsCallBackList[ID] = nil;
 		if (CallbackState) then
-			task.spawn(Thread, true, ...);
+			task.spawn(Thread, ...);
 		else
-			task.spawn(Thread, false);
+			task.spawn(Thread, nil);
 		end
 	end
 
@@ -360,13 +370,13 @@ local function RemoteFunctionInvoke(self: any, plr: Player, ...: any): (boolean,
 		task.spawn(Thread, false);
 	end)
 
-	task.spawn(function(...: any)
+	task.spawn(function()
 		if (IsServer) then
-			_Fire(self._Sent, plr, ID, ...);
+			_Fire(self._Sent, plr, ID, table.unpack(Data));
 		else
-			_Fire(self._Sent, ID, ...);
+			_Fire(self._Sent, ID, table.unpack(Data));
 		end
-	end, ...)
+	end)
 
 	return coroutine.yield();
 end
@@ -564,3 +574,4 @@ else
 end
 
 return LBConnection;
+
